@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>ヒューマン・アナトミー・アトラス2026 プロトタイプ</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="toolbar">
+        <h1>ヒューマン・アナトミー・アトラス2026</h1>
+        <div class="controls">
+          <label>
+            学習領域
+            <select id="domainFilter">
+              <option value="all">すべて</option>
+              <option value="nursing">看護師</option>
+              <option value="orthoptist">視能訓練士</option>
+              <option value="dental">歯科衛生士</option>
+              <option value="clinical_engineering">臨床工学技士</option>
+            </select>
+          </label>
+          <label>
+            レイヤー
+            <select id="layerFilter">
+              <option value="all">すべて</option>
+              <option value="skeletal">骨格</option>
+              <option value="muscular">筋</option>
+              <option value="nervous">神経</option>
+              <option value="vascular">血管</option>
+              <option value="organs">臓器</option>
+              <option value="ophthalmic">眼</option>
+              <option value="dental">口腔・歯科</option>
+            </select>
+          </label>
+          <button id="toggleEn">英語名 ON/OFF</button>
+          <button id="quizButton">クイズ開始</button>
+        </div>
+      </header>
+
+      <main>
+        <section id="viewport" aria-label="3Dビュー"></section>
+        <aside class="info-panel">
+          <h2>選択部位</h2>
+          <p id="partName">未選択</p>
+          <p id="partNameEn" class="muted"></p>
+          <p id="partDescription" class="muted">部位をタップすると説明が表示されます。</p>
+
+          <h3>進捗</h3>
+          <ul>
+            <li>学習時間: <span id="learningTime">0分</span></li>
+            <li>クイズ正答率: <span id="quizScore">-</span></li>
+          </ul>
+
+          <div id="quizArea" class="quiz hidden">
+            <p id="quizPrompt"></p>
+            <div id="quizOptions"></div>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
