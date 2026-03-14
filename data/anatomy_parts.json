@@ -1,0 +1,122 @@
+[
+  {
+    "id": "skull",
+    "nameJa": "頭蓋骨",
+    "nameEn": "Skull",
+    "description": "脳を保護する骨格。頭頸部の位置関係を学ぶ基準になります。",
+    "domains": ["nursing", "dental"],
+    "layer": "skeletal",
+    "color": "#e6e2d8",
+    "shape": "sphere",
+    "position": [0, 1.7, 0],
+    "scale": [0.28, 0.33, 0.25]
+  },
+  {
+    "id": "eye_globe",
+    "nameJa": "眼球",
+    "nameEn": "Eyeball",
+    "description": "視覚情報を受け取る器官。視能訓練士領域の導入デモ用です。",
+    "domains": ["orthoptist"],
+    "layer": "ophthalmic",
+    "color": "#f5f7ff",
+    "shape": "sphere",
+    "position": [0.08, 1.68, 0.18],
+    "scale": [0.08, 0.08, 0.08]
+  },
+  {
+    "id": "optic_nerve",
+    "nameJa": "視神経",
+    "nameEn": "Optic Nerve",
+    "description": "眼の情報を脳へ伝える神経。眼球とセットで位置関係を学びます。",
+    "domains": ["orthoptist"],
+    "layer": "ophthalmic",
+    "color": "#ffd166",
+    "shape": "box",
+    "position": [0.04, 1.65, -0.12],
+    "scale": [0.08, 0.04, 0.18]
+  },
+  {
+    "id": "mandible",
+    "nameJa": "下顎骨",
+    "nameEn": "Mandible",
+    "description": "咀嚼と口腔の基準となる骨格。歯科衛生士向けデモの基礎部位です。",
+    "domains": ["dental"],
+    "layer": "skeletal",
+    "color": "#f0dbc5",
+    "shape": "capsule",
+    "position": [0, 1.44, 0.08],
+    "scale": [0.2, 0.08, 0.14]
+  },
+  {
+    "id": "tooth",
+    "nameJa": "上顎中切歯",
+    "nameEn": "Maxillary Central Incisor",
+    "description": "前歯の代表部位。歯面の位置感覚をつかむためのサンプルです。",
+    "domains": ["dental"],
+    "layer": "dental",
+    "color": "#fff2d8",
+    "shape": "box",
+    "position": [0, 1.53, 0.2],
+    "scale": [0.05, 0.08, 0.03]
+  },
+  {
+    "id": "heart",
+    "nameJa": "心臓",
+    "nameEn": "Heart",
+    "description": "全身へ血液を送るポンプ。看護と臨床工学で重要な基本臓器です。",
+    "domains": ["nursing", "clinical_engineering"],
+    "layer": "organs",
+    "color": "#d24b55",
+    "shape": "sphere",
+    "position": [0.05, 1.2, 0.1],
+    "scale": [0.18, 0.2, 0.15]
+  },
+  {
+    "id": "lungs",
+    "nameJa": "肺",
+    "nameEn": "Lungs",
+    "description": "酸素と二酸化炭素を交換する臓器。胸郭内の広がりを確認できます。",
+    "domains": ["nursing", "clinical_engineering"],
+    "layer": "organs",
+    "color": "#f08a85",
+    "shape": "capsule",
+    "position": [0, 1.32, 0],
+    "scale": [0.32, 0.26, 0.18]
+  },
+  {
+    "id": "radial_artery",
+    "nameJa": "橈骨動脈",
+    "nameEn": "Radial Artery",
+    "description": "脈拍触知で重要な動脈。末梢循環の学習導入に使えます。",
+    "domains": ["nursing", "clinical_engineering"],
+    "layer": "vascular",
+    "color": "#ff4f6d",
+    "shape": "box",
+    "position": [0.35, 1.02, 0],
+    "scale": [0.04, 0.16, 0.04]
+  },
+  {
+    "id": "kidney",
+    "nameJa": "腎臓",
+    "nameEn": "Kidney",
+    "description": "体液バランスを調整し、老廃物を排出する臓器です。",
+    "domains": ["nursing", "clinical_engineering"],
+    "layer": "organs",
+    "color": "#8d62c7",
+    "shape": "capsule",
+    "position": [-0.18, 0.95, 0],
+    "scale": [0.12, 0.12, 0.08]
+  },
+  {
+    "id": "femur",
+    "nameJa": "大腿骨",
+    "nameEn": "Femur",
+    "description": "下肢を支える長骨。全身スケール感をつかむための追加サンプルです。",
+    "domains": ["nursing"],
+    "layer": "skeletal",
+    "color": "#e7decf",
+    "shape": "capsule",
+    "position": [-0.08, 0.45, 0.02],
+    "scale": [0.08, 0.34, 0.08]
+  }
+]

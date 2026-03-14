@@ -1,0 +1,10 @@
+{
+  "name": "ヒューマン・アナトミー・アトラス2026 Demo",
+  "short_name": "Anatomy Demo",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#edf4ff",
+  "theme_color": "#10233f"
+}
