@@ -1,14 +1,14 @@
 # Human Anatomy Atlas 2026 Prototype
 
-スマホとタブレットで動作確認できる「ヒューマン・アナトミー・アトラス2026」の静的デモです。
+スマホとタブレットで動作確認できる「ヒューマン・アナトミー・アトラス2026」の静的デモです。現在は Z-Anatomy の内臓系モデルを読み込み、タップした構造名を表示します。
 
 ## デモ内容
 
-- 同一の人体モデル上で部位を切り替える解剖学学習デモ
+- Z-Anatomy の `VisceralSystem100.fbx` を使った内臓系 3D デモ
 - 1本指の回転、2本指の拡大縮小・移動
-- 学習領域フィルタ、レイヤーフィルタ
-- 日本語 / 英語ラベル切り替え
-- タップ選択とクイズ機能
+- タップした構造の名称表示
+- 英語名称の表示切り替え
+- スマホ向けレイアウト
 
 ## ローカル起動
 
@@ -36,10 +36,18 @@ python3 -m http.server 4173
 - `index.html`
 - `src/app.js`
 - `src/styles.css`
-- `data/anatomy_parts.json`
+- `assets/z-anatomy/VisceralSystem100.fbx`
+- `assets/z-anatomy/LICENSE.txt`
 - `.github/workflows/deploy-pages.yml`
 
 ## 備考
 
 - 本リポジトリは UI と学習導線の確認用プロトタイプです。
-- 本運用には監修済みの精密 3D 解剖モデルへの差し替えが必要です。
+- 現在の 3D モデルは Z-Anatomy / BodyParts3D 由来です。
+
+## Attribution
+
+- BodyParts3D - The Database Center for Life Science - CC-BY-SA 2.1 Japan
+- Z-Anatomy - The open source atlas of anatomy - CC-BY-SA 4.0
+
+モデル利用時の詳細条件は [assets/z-anatomy/LICENSE.txt](/Users/ny/Documents/Antigravity/入学前教育/Asc/assets/z-anatomy/LICENSE.txt) を参照してください。
