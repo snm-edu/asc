@@ -24,18 +24,6 @@
     "scale": [0.08, 0.08, 0.08]
   },
   {
-    "id": "optic_nerve",
-    "nameJa": "視神経",
-    "nameEn": "Optic Nerve",
-    "description": "眼の情報を脳へ伝える神経。眼球とセットで位置関係を学びます。",
-    "domains": ["orthoptist"],
-    "layer": "ophthalmic",
-    "color": "#ffd166",
-    "shape": "box",
-    "position": [0.04, 1.65, -0.12],
-    "scale": [0.08, 0.04, 0.18]
-  },
-  {
     "id": "mandible",
     "nameJa": "下顎骨",
     "nameEn": "Mandible",
@@ -46,18 +34,6 @@
     "shape": "capsule",
     "position": [0, 1.44, 0.08],
     "scale": [0.2, 0.08, 0.14]
-  },
-  {
-    "id": "tooth",
-    "nameJa": "上顎中切歯",
-    "nameEn": "Maxillary Central Incisor",
-    "description": "前歯の代表部位。歯面の位置感覚をつかむためのサンプルです。",
-    "domains": ["dental"],
-    "layer": "dental",
-    "color": "#fff2d8",
-    "shape": "box",
-    "position": [0, 1.53, 0.2],
-    "scale": [0.05, 0.08, 0.03]
   },
   {
     "id": "heart",
@@ -106,17 +82,5 @@
     "shape": "capsule",
     "position": [-0.18, 0.95, 0],
     "scale": [0.12, 0.12, 0.08]
-  },
-  {
-    "id": "femur",
-    "nameJa": "大腿骨",
-    "nameEn": "Femur",
-    "description": "下肢を支える長骨。全身スケール感をつかむための追加サンプルです。",
-    "domains": ["nursing"],
-    "layer": "skeletal",
-    "color": "#e7decf",
-    "shape": "capsule",
-    "position": [-0.08, 0.45, 0.02],
-    "scale": [0.08, 0.34, 0.08]
   }
 ]
