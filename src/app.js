@@ -1,5 +1,5 @@
-import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
-import { OrbitControls } from "https://unpkg.com/three@0.165.0/examples/jsm/controls/OrbitControls.js";
+import * as THREE from "https://esm.sh/three@0.165.0";
+import { OrbitControls } from "https://esm.sh/three@0.165.0/examples/jsm/controls/OrbitControls.js";
 
 const viewport = document.getElementById("viewport");
 const partName = document.getElementById("partName");
@@ -16,6 +16,26 @@ const learningTime = document.getElementById("learningTime");
 const quizScore = document.getElementById("quizScore");
 const loadingNotice = document.getElementById("loadingNotice");
 const resetViewButton = document.getElementById("resetView");
+let appReady = false;
+
+window.addEventListener("error", (event) => {
+  if (appReady) {
+    return;
+  }
+
+  const message = event.error?.message || event.message || "不明なエラー";
+  setLoadingMessage(`初期化エラー: ${message}`, true);
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  if (appReady) {
+    return;
+  }
+
+  const reason =
+    event.reason instanceof Error ? event.reason.message : String(event.reason ?? "不明なエラー");
+  setLoadingMessage(`初期化エラー: ${reason}`, true);
+});
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color("#dbe9ff");
@@ -448,8 +468,10 @@ renderer.domElement.addEventListener("pointerup", onPointerUp, { passive: true }
 renderer.domElement.addEventListener("pointercancel", onPointerCancel, { passive: true });
 window.addEventListener("resize", resize);
 
-const viewportResizeObserver = new ResizeObserver(() => resize());
-viewportResizeObserver.observe(viewport);
+if (typeof ResizeObserver === "function") {
+  const viewportResizeObserver = new ResizeObserver(() => resize());
+  viewportResizeObserver.observe(viewport);
+}
 
 renderEmptySelection();
 setEnglishLabels(false);
@@ -461,6 +483,7 @@ loadParts()
     buildMeshes(parts);
     applyFilters();
     resize();
+    appReady = true;
     hideLoadingMessage();
   })
   .catch((error) => {
