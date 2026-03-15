@@ -1,13 +1,14 @@
 # Human Anatomy Atlas 2026 Prototype
 
-スマホとタブレットで動作確認できる「ヒューマン・アナトミー・アトラス2026」の静的デモです。現在は Z-Anatomy の内臓系モデルを読み込み、タップした構造名を表示します。
+スマホとタブレットで動作確認できる「ヒューマン・アナトミー・アトラス2026」の静的デモです。Z-Anatomy を使い、タップした構造名を日本語で表示します。
 
 ## デモ内容
 
-- Z-Anatomy の `VisceralSystem100.fbx` を使った内臓系 3D デモ
+- Z-Anatomy の複数 FBX を使った 3D デモ
+- 内臓系 / 循環器系 / 脳神経系 / 骨筋肉系 / 視脳系 / 歯科口腔系の切り替え
 - 1本指の回転、2本指の拡大縮小・移動
-- タップした構造の名称表示
-- 英語名称の表示切り替え
+- タップした構造の日本語名称表示
+- 原語表示の切り替え
 - スマホ向けレイアウト
 
 ## ローカル起動
@@ -35,8 +36,14 @@ python3 -m http.server 4173
 
 - `index.html`
 - `src/app.js`
+- `src/anatomy-ja.js`
+- `src/model-systems.js`
 - `src/styles.css`
 - `assets/z-anatomy/VisceralSystem100.fbx`
+- `assets/z-anatomy/CardioVascular41.fbx`
+- `assets/z-anatomy/NervousSystem100.fbx`
+- `assets/z-anatomy/SkeletalSystem100.fbx`
+- `assets/z-anatomy/MuscularSystem100.fbx`
 - `assets/z-anatomy/LICENSE.txt`
 - `.github/workflows/deploy-pages.yml`
 
@@ -44,6 +51,7 @@ python3 -m http.server 4173
 
 - 本リポジトリは UI と学習導線の確認用プロトタイプです。
 - 現在の 3D モデルは Z-Anatomy / BodyParts3D 由来です。
+- FBX は大きいため、スマホではカテゴリ切り替え時に読み込み時間がかかります。
 
 ## Attribution
 
