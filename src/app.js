@@ -47,7 +47,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = true;
 controls.rotateSpeed = 0.9;
-controls.zoomSpeed = 0.95;
+controls.zoomSpeed = 1.1;
 controls.panSpeed = 0.8;
 controls.minPolarAngle = 0.12;
 controls.maxPolarAngle = Math.PI - 0.08;
@@ -82,6 +82,7 @@ scene.add(modelRoot);
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 const labelWorldPosition = new THREE.Vector3();
+const GENERIC_JAPANESE_LABELS = new Set(["器", "動脈", "静脈", "筋膜", "骨", "腺", "軟骨"]);
 
 const floatingLabel = document.createElement("div");
 floatingLabel.className = "floating-label hidden";
@@ -309,6 +310,35 @@ function computeBoundingBox(meshes) {
   return hasMesh ? box : null;
 }
 
+function containsAsciiLetters(value) {
+  return /[A-Za-z]/.test(value);
+}
+
+function isDisplayableJapaneseName(value) {
+  if (!value || containsAsciiLetters(value) || /\d+$/.test(value)) {
+    return false;
+  }
+
+  return !GENERIC_JAPANESE_LABELS.has(value);
+}
+
+function computeMeshVolume(mesh) {
+  if (!mesh.geometry) {
+    return 0;
+  }
+
+  if (!mesh.geometry.boundingBox) {
+    mesh.geometry.computeBoundingBox();
+  }
+
+  if (!mesh.geometry.boundingBox) {
+    return 0;
+  }
+
+  const size = mesh.geometry.boundingBox.getSize(new THREE.Vector3());
+  return Math.max(size.x * size.y * size.z, 0);
+}
+
 function fitCameraToMeshes(meshes) {
   const box = computeBoundingBox(meshes);
   if (!box) {
@@ -323,13 +353,13 @@ function fitCameraToMeshes(meshes) {
   state.defaultTarget.copy(center);
   state.defaultCameraPosition.copy(center).add(new THREE.Vector3(distance * 0.52, size.y * 0.14, distance));
 
-  camera.near = Math.max(0.01, maxDim / 100);
+  camera.near = Math.max(0.001, maxDim / 240);
   camera.far = distance * 10;
   camera.position.copy(state.defaultCameraPosition);
   camera.updateProjectionMatrix();
 
-  controls.minDistance = Math.max(0.28, distance * 0.32);
-  controls.maxDistance = distance * 3.3;
+  controls.minDistance = Math.max(0.03, distance * 0.08);
+  controls.maxDistance = distance * 4.1;
   controls.target.copy(state.defaultTarget);
   controls.update();
 }
@@ -384,7 +414,7 @@ function disposeCurrentModel() {
 }
 
 function registerMeshes(group, system) {
-  const visibleMeshes = [];
+  const visibleMeshMap = new Map();
   const labels = new Set();
 
   group.traverse((child) => {
@@ -406,9 +436,30 @@ function registerMeshes(group, system) {
 
     child.userData.displayName = cleanLabel;
     child.userData.japaneseName = translateAnatomyLabel(cleanLabel);
-    visibleMeshes.push(child);
-    labels.add(child.userData.japaneseName);
+    if (!isDisplayableJapaneseName(child.userData.japaneseName)) {
+      child.visible = false;
+      return;
+    }
 
+    const dedupeKey = `${child.userData.sourceId ?? "unknown"}:${cleanLabel}`;
+    const volume = computeMeshVolume(child);
+    const currentEntry = visibleMeshMap.get(dedupeKey);
+
+    if (currentEntry && currentEntry.volume >= volume) {
+      child.visible = false;
+      return;
+    }
+
+    if (currentEntry) {
+      currentEntry.mesh.visible = false;
+    }
+
+    visibleMeshMap.set(dedupeKey, { mesh: child, volume });
+  });
+
+  const visibleMeshes = Array.from(visibleMeshMap.values(), (entry) => entry.mesh);
+  visibleMeshes.forEach((child) => {
+    labels.add(child.userData.japaneseName);
     forEachMaterial(child, (material) => {
       if ("side" in material) {
         material.side = THREE.DoubleSide;
