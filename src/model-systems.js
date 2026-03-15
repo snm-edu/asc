@@ -69,102 +69,6 @@ const DENTAL_ORAL_KEYWORDS = [
   "viscerocranium",
 ];
 
-const COMMON_DETAIL_KEYWORDS = [
-  "surface",
-  "border",
-  "margin",
-  "wall",
-  "pole",
-  "impression",
-  "fissure",
-  "notch",
-  "curvature",
-  "sulcus",
-  "groove",
-  "vertex",
-  "canal",
-  "ampulla",
-  "cupula",
-  "limb",
-  "fold",
-  "folds",
-  "zone",
-  "horn",
-  "eminence",
-  "tuberosity",
-];
-
-const VISCERAL_DETAIL_KEYWORDS = [
-  ...COMMON_DETAIL_KEYWORDS,
-  "segment",
-  "segments",
-  "division",
-  "part",
-  "parts",
-  "body of",
-  "neck of",
-  "fundus of",
-  "apex of",
-  "hilum",
-  "porta",
-  "cardia",
-  "fornix",
-  "curvature",
-  "process",
-  "lobe",
-  "area",
-  "pars",
-  "isthmus",
-  "incisure",
-];
-
-const CARDIOVASCULAR_DETAIL_KEYWORDS = [
-  ...COMMON_DETAIL_KEYWORDS,
-  "leaflet",
-  "leaflets",
-  "valve",
-  "septum",
-  "bifurcation",
-  "confluence",
-  "union",
-  "sinus",
-  "root of",
-  "base of",
-  "apex of",
-  "sulcus",
-  "circle",
-  "branches of",
-  "tributaries of",
-];
-
-const NERVOUS_DETAIL_KEYWORDS = [
-  ...COMMON_DETAIL_KEYWORDS,
-  "funiculus",
-  "wall of",
-  "part of",
-  "structures of",
-];
-
-const OSTEOMUSCULAR_DETAIL_KEYWORDS = [
-  ...COMMON_DETAIL_KEYWORDS,
-  "foramen",
-  "process",
-  "fossa",
-  "line",
-  "crest",
-  "notch",
-  "arch",
-  "plate",
-  "facet",
-  "condyle",
-  "tubercle",
-  "tuberosity",
-  "spine",
-  "head of",
-  "neck of",
-  "body of",
-];
-
 function includesAnyKeyword(label, keywords) {
   const lowerLabel = label.toLowerCase();
   return keywords.some((keyword) => lowerLabel.includes(keyword));
@@ -206,7 +110,6 @@ export const SYSTEMS = [
     sources: ["visceral"],
     targetHeight: 2.35,
     emptyMessage: "内臓系の構造をタップすると、日本語名を表示します。",
-    excludeKeywords: VISCERAL_DETAIL_KEYWORDS,
   },
   {
     id: "cardiovascular",
@@ -215,7 +118,6 @@ export const SYSTEMS = [
     sources: ["cardiovascular"],
     targetHeight: 2.45,
     emptyMessage: "循環器系の構造をタップすると、日本語名を表示します。",
-    excludeKeywords: CARDIOVASCULAR_DETAIL_KEYWORDS,
   },
   {
     id: "nervous",
@@ -224,7 +126,6 @@ export const SYSTEMS = [
     sources: ["nervous"],
     targetHeight: 2.4,
     emptyMessage: "脳神経系の構造をタップすると、日本語名を表示します。",
-    excludeKeywords: NERVOUS_DETAIL_KEYWORDS,
   },
   {
     id: "osteomuscular",
@@ -233,7 +134,6 @@ export const SYSTEMS = [
     sources: ["skeletal", "muscular"],
     targetHeight: 2.45,
     emptyMessage: "骨格や筋の構造をタップすると、日本語名を表示します。",
-    excludeKeywords: OSTEOMUSCULAR_DETAIL_KEYWORDS,
   },
   {
     id: "visual-brain",
@@ -243,7 +143,6 @@ export const SYSTEMS = [
     targetHeight: 1.34,
     emptyMessage: "眼球・視神経・脳神経系の構造をタップすると、日本語名を表示します。",
     includeLabel: (label) => includesAnyKeyword(label, VISUAL_BRAIN_KEYWORDS),
-    excludeKeywords: NERVOUS_DETAIL_KEYWORDS,
   },
   {
     id: "dental-oral",
@@ -253,7 +152,6 @@ export const SYSTEMS = [
     targetHeight: 1.38,
     emptyMessage: "歯科口腔系の構造をタップすると、日本語名を表示します。",
     includeLabel: (label) => includesAnyKeyword(label, DENTAL_ORAL_KEYWORDS),
-    excludeKeywords: [...COMMON_DETAIL_KEYWORDS, "line", "crest", "arch", "plate", "facet"],
   },
 ];
 
@@ -266,13 +164,5 @@ export function getSourceLabel(system) {
 }
 
 export function shouldIncludeLabel(system, label) {
-  if (system.includeLabel && !system.includeLabel(label)) {
-    return false;
-  }
-
-  if (system.excludeKeywords && includesAnyKeyword(label, system.excludeKeywords)) {
-    return false;
-  }
-
-  return true;
+  return system.includeLabel ? system.includeLabel(label) : true;
 }

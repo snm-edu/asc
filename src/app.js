@@ -1,34 +1,41 @@
 import * as THREE from "https://esm.sh/three@0.165.0";
 import { OrbitControls } from "https://esm.sh/three@0.165.0/examples/jsm/controls/OrbitControls.js";
+import { FBXLoader } from "https://esm.sh/three@0.165.0/examples/jsm/loaders/FBXLoader.js";
+import {
+  buildStructureDescription,
+  parseObjectLabel,
+  translateAnatomyLabel,
+} from "./anatomy-ja.js";
+import {
+  getSourceLabel,
+  getSystemById,
+  MODEL_ASSETS,
+  shouldIncludeLabel,
+  SYSTEMS,
+} from "./model-systems.js";
 
 const viewport = document.getElementById("viewport");
+const loadingNotice = document.getElementById("loadingNotice");
+const systemSelect = document.getElementById("systemSelect");
+const toggleEn = document.getElementById("toggleEn");
+const resetViewButton = document.getElementById("resetView");
 const partName = document.getElementById("partName");
 const partNameEn = document.getElementById("partNameEn");
 const partDescription = document.getElementById("partDescription");
-const domainFilter = document.getElementById("domainFilter");
-const layerFilter = document.getElementById("layerFilter");
-const toggleEn = document.getElementById("toggleEn");
-const quizButton = document.getElementById("quizButton");
-const quizArea = document.getElementById("quizArea");
-const quizPrompt = document.getElementById("quizPrompt");
-const quizOptions = document.getElementById("quizOptions");
-const learningTime = document.getElementById("learningTime");
-const quizScore = document.getElementById("quizScore");
-const loadingNotice = document.getElementById("loadingNotice");
-const resetViewButton = document.getElementById("resetView");
+const structureCount = document.getElementById("structureCount");
+const modelSource = document.getElementById("modelSource");
+const statusPill = document.getElementById("statusPill");
+const systemLead = document.getElementById("systemLead");
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color("#dbe9ff");
-scene.fog = new THREE.Fog("#dbe9ff", 4.8, 8.4);
+scene.background = new THREE.Color("#d9e6ff");
+scene.fog = new THREE.Fog("#d9e6ff", 5.5, 10);
 
-const defaultCameraPosition = new THREE.Vector3(1.85, 1.45, 2.3);
-const defaultTarget = new THREE.Vector3(0, 1.05, 0);
-
-const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
-camera.position.copy(defaultCameraPosition);
+const camera = new THREE.PerspectiveCamera(42, 1, 0.01, 100);
+camera.position.set(2, 1.4, 2.8);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.1));
 renderer.domElement.className = "viewer-canvas";
 renderer.domElement.style.touchAction = "none";
 if ("outputColorSpace" in renderer) {
@@ -39,78 +46,81 @@ viewport.appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = true;
-controls.minDistance = 0.55;
-controls.maxDistance = 4.8;
-controls.minPolarAngle = 0.2;
-controls.maxPolarAngle = Math.PI - 0.18;
-controls.rotateSpeed = 0.85;
+controls.rotateSpeed = 0.9;
 controls.zoomSpeed = 1.1;
-controls.panSpeed = 0.9;
-controls.target.copy(defaultTarget);
+controls.panSpeed = 0.8;
+controls.minPolarAngle = 0.12;
+controls.maxPolarAngle = Math.PI - 0.08;
 controls.touches.ONE = THREE.TOUCH.ROTATE;
 controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
 
-const hemiLight = new THREE.HemisphereLight(0xf7fbff, 0x5d6f8f, 1.45);
-scene.add(hemiLight);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x6f7e99, 1.55));
 
-const keyLight = new THREE.DirectionalLight(0xffffff, 1.25);
-keyLight.position.set(3, 5, 4);
+const keyLight = new THREE.DirectionalLight(0xffffff, 1.35);
+keyLight.position.set(4, 6, 5);
 scene.add(keyLight);
 
-const fillLight = new THREE.DirectionalLight(0x9ebcff, 0.45);
-fillLight.position.set(-4, 2, -2);
+const fillLight = new THREE.DirectionalLight(0xadc4ff, 0.7);
+fillLight.position.set(-4, 3, -3);
 scene.add(fillLight);
 
-const bodyRoot = new THREE.Group();
-scene.add(bodyRoot);
-
-const referenceBody = new THREE.Mesh(
-  new THREE.CapsuleGeometry(0.34, 1.2, 10, 18),
-  new THREE.MeshStandardMaterial({
-    color: "#a8bde0",
-    transparent: true,
-    opacity: 0.28,
-    roughness: 0.55,
-    metalness: 0.05,
-  })
-);
-referenceBody.position.y = 0.95;
-bodyRoot.add(referenceBody);
+const rimLight = new THREE.DirectionalLight(0xffffff, 0.35);
+rimLight.position.set(0, 3, -6);
+scene.add(rimLight);
 
 const groundShadow = new THREE.Mesh(
-  new THREE.CircleGeometry(1.2, 48),
-  new THREE.MeshBasicMaterial({ color: "#bed2f5", transparent: true, opacity: 0.32 })
+  new THREE.CircleGeometry(1.85, 72),
+  new THREE.MeshBasicMaterial({ color: "#c7d6f5", transparent: true, opacity: 0.55 })
 );
 groundShadow.rotation.x = -Math.PI / 2;
-groundShadow.position.set(0, -0.02, 0);
-bodyRoot.add(groundShadow);
+groundShadow.position.y = -0.01;
+scene.add(groundShadow);
+
+const modelRoot = new THREE.Group();
+scene.add(modelRoot);
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 const labelWorldPosition = new THREE.Vector3();
 
-const state = {
-  anatomyParts: [],
-  selectedMesh: null,
-  showEnglish: false,
-  learningStartedAt: Date.now(),
-  lastLearningMinute: -1,
-  quiz: { active: false, total: 0, correct: 0, answerId: null },
-  activePointers: new Map(),
-  tapCandidate: null,
-};
-
 const floatingLabel = document.createElement("div");
 floatingLabel.className = "floating-label hidden";
 viewport.appendChild(floatingLabel);
 
-function shuffle(items) {
-  const array = [...items];
-  for (let index = array.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(Math.random() * (index + 1));
-    [array[index], array[swapIndex]] = [array[swapIndex], array[index]];
+const state = {
+  currentSystemId: SYSTEMS[0].id,
+  currentModel: null,
+  interactiveMeshes: [],
+  selectedMesh: null,
+  selectedMaterialRestore: null,
+  showOriginalName: false,
+  defaultCameraPosition: new THREE.Vector3(2, 1.4, 2.8),
+  defaultTarget: new THREE.Vector3(0, 1.1, 0),
+  activePointers: new Map(),
+  tapCandidate: null,
+  ready: false,
+  loadVersion: 0,
+};
+
+window.addEventListener("error", (event) => {
+  if (state.ready) {
+    return;
   }
-  return array;
+  const message = event.error?.message || event.message || "不明なエラー";
+  setLoadingMessage(`初期化エラー: ${message}`, true);
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  if (state.ready) {
+    return;
+  }
+  const reason =
+    event.reason instanceof Error ? event.reason.message : String(event.reason ?? "不明なエラー");
+  setLoadingMessage(`初期化エラー: ${reason}`, true);
+});
+
+function getCurrentSystem() {
+  return getSystemById(state.currentSystemId);
 }
 
 function setLoadingMessage(message, isError = false) {
@@ -124,81 +134,109 @@ function hideLoadingMessage() {
   loadingNotice.classList.remove("error");
 }
 
-function createGeometry(shape) {
-  if (shape === "sphere") {
-    return new THREE.SphereGeometry(0.5, 32, 24);
-  }
-  if (shape === "box") {
-    return new THREE.BoxGeometry(1, 1, 1);
-  }
-  return new THREE.CapsuleGeometry(0.5, 0.8, 8, 16);
+function updateSystemPresentation(system) {
+  statusPill.textContent = system.statusLabel;
+  systemLead.textContent = `${system.label}モデルをスマホで回転・拡大しながら、タップした解剖構造の日本語名を確認できる試作版です。`;
+  modelSource.textContent = getSourceLabel(system);
 }
 
-async function loadParts() {
-  const response = await fetch("./data/anatomy_parts.json");
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
-  }
-  return response.json();
-}
-
-function buildMeshes(parts) {
-  state.anatomyParts.length = 0;
-
-  for (const part of parts) {
-    const geometry = createGeometry(part.shape);
-    geometry.scale(...part.scale);
-
-    const material = new THREE.MeshStandardMaterial({
-      color: part.color,
-      roughness: 0.45,
-      metalness: 0.08,
-      emissive: "#000000",
-    });
-
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(...part.position);
-    mesh.userData.part = part;
-    bodyRoot.add(mesh);
-    state.anatomyParts.push(mesh);
-  }
-}
-
-function renderEmptySelection(message = "3Dビューの部位をタップすると、名称と説明が表示されます。") {
+function renderEmptySelection(message) {
   partName.textContent = "未選択";
   partNameEn.textContent = "";
   partDescription.textContent = message;
 }
 
-function renderPartInfo(part) {
-  partName.textContent = part.nameJa;
-  partNameEn.textContent = state.showEnglish ? part.nameEn : "";
-  partDescription.textContent = part.description;
+function renderStructureInfo(mesh) {
+  const system = getCurrentSystem();
+  partName.textContent = mesh.userData.japaneseName;
+  partNameEn.textContent = state.showOriginalName ? mesh.userData.displayName : "";
+  partDescription.textContent = buildStructureDescription(
+    system.label,
+    mesh.userData.displayName,
+    state.showOriginalName
+  );
+}
+
+function setOriginalNameVisibility(enabled) {
+  state.showOriginalName = enabled;
+  toggleEn.textContent = enabled ? "原語表示 ON" : "原語表示 OFF";
+
+  if (state.selectedMesh) {
+    renderStructureInfo(state.selectedMesh);
+    updateFloatingLabel();
+    return;
+  }
+
+  renderEmptySelection(getCurrentSystem().emptyMessage);
+}
+
+function forEachMaterial(materialOrMesh, callback) {
+  const materials = Array.isArray(materialOrMesh.material)
+    ? materialOrMesh.material
+    : [materialOrMesh.material];
+  materials.forEach((material) => {
+    if (material) {
+      callback(material);
+    }
+  });
+}
+
+function restoreSelectedAppearance() {
+  if (!state.selectedMaterialRestore) {
+    return;
+  }
+
+  const { mesh, originalMaterial } = state.selectedMaterialRestore;
+  const activeMaterial = mesh.material;
+  if (activeMaterial !== originalMaterial) {
+    forEachMaterial({ material: activeMaterial }, (material) => material.dispose?.());
+    mesh.material = originalMaterial;
+  }
+
+  state.selectedMaterialRestore = null;
 }
 
 function clearSelection({ resetInfo = false } = {}) {
-  if (state.selectedMesh) {
-    state.selectedMesh.material.emissive.set("#000000");
-  }
+  restoreSelectedAppearance();
   state.selectedMesh = null;
   floatingLabel.classList.add("hidden");
 
   if (resetInfo) {
-    renderEmptySelection();
+    renderEmptySelection(getCurrentSystem().emptyMessage);
   }
 }
 
+function applySelectedAppearance(mesh) {
+  restoreSelectedAppearance();
+
+  const originalMaterial = mesh.material;
+  const highlightedMaterial = Array.isArray(originalMaterial)
+    ? originalMaterial.map((material) => material?.clone?.() ?? material)
+    : originalMaterial?.clone?.() ?? originalMaterial;
+
+  state.selectedMaterialRestore = { mesh, originalMaterial };
+  mesh.material = highlightedMaterial;
+
+  forEachMaterial(mesh, (material) => {
+    if (material.emissive) {
+      material.emissive.set("#164bff");
+      material.emissiveIntensity = 0.35;
+      return;
+    }
+    if (material.color) {
+      material.color.offsetHSL(0, 0, 0.08);
+    }
+  });
+}
+
 function updateFloatingLabel() {
-  if (!state.selectedMesh || !state.selectedMesh.visible) {
+  if (!state.selectedMesh) {
     floatingLabel.classList.add("hidden");
     return;
   }
 
-  const part = state.selectedMesh.userData.part;
-  floatingLabel.textContent = state.showEnglish ? `${part.nameJa} / ${part.nameEn}` : part.nameJa;
-
+  floatingLabel.textContent = state.selectedMesh.userData.japaneseName;
   state.selectedMesh.getWorldPosition(labelWorldPosition);
-  labelWorldPosition.y += 0.18;
   labelWorldPosition.project(camera);
 
   if (labelWorldPosition.z > 1) {
@@ -207,156 +245,261 @@ function updateFloatingLabel() {
   }
 
   const x = (labelWorldPosition.x * 0.5 + 0.5) * viewport.clientWidth;
-  const y = (labelWorldPosition.y * -0.5 + 0.5) * viewport.clientHeight - 14;
-
+  const y = (labelWorldPosition.y * -0.5 + 0.5) * viewport.clientHeight - 18;
   floatingLabel.style.left = `${x}px`;
   floatingLabel.style.top = `${y}px`;
   floatingLabel.classList.remove("hidden");
 }
 
 function selectMesh(mesh) {
-  clearSelection();
   state.selectedMesh = mesh;
-  state.selectedMesh.material.emissive.set("#2354ff");
-  renderPartInfo(mesh.userData.part);
+  applySelectedAppearance(mesh);
+  renderStructureInfo(mesh);
   updateFloatingLabel();
 }
 
-function applyFilters() {
-  const domain = domainFilter.value;
-  const layer = layerFilter.value;
-
-  state.anatomyParts.forEach((mesh) => {
-    const part = mesh.userData.part;
-    const domainMatch = domain === "all" || part.domains.includes(domain);
-    const layerMatch = layer === "all" || part.layer === layer;
-    mesh.visible = domainMatch && layerMatch;
-  });
-
-  if (state.selectedMesh && !state.selectedMesh.visible) {
-    clearSelection({ resetInfo: true });
+function pickMesh(event) {
+  if (state.interactiveMeshes.length === 0) {
+    return null;
   }
 
-  if (state.quiz.active) {
-    state.quiz.active = false;
-    quizPrompt.textContent = "表示条件が変わったため、クイズをリセットしました。";
-  }
-}
-
-function resetView() {
-  camera.position.copy(defaultCameraPosition);
-  controls.target.copy(defaultTarget);
-  controls.update();
-  updateFloatingLabel();
-}
-
-function pickVisibleMesh(event) {
   const rect = renderer.domElement.getBoundingClientRect();
   pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
   raycaster.setFromCamera(pointer, camera);
-  return raycaster.intersectObjects(state.anatomyParts.filter((mesh) => mesh.visible))[0] ?? null;
+  return raycaster.intersectObjects(state.interactiveMeshes, false)[0] ?? null;
 }
 
 function onSceneTap(event) {
-  const hit = pickVisibleMesh(event);
-
+  const hit = pickMesh(event);
   if (!hit) {
     clearSelection({ resetInfo: true });
     return;
   }
-
   selectMesh(hit.object);
-
-  if (state.quiz.active) {
-    handleQuizAnswer(hit.object.userData.part.id);
-  }
 }
 
-function updateLearningTime() {
-  const minutes = Math.floor((Date.now() - state.learningStartedAt) / 60000);
-  if (minutes === state.lastLearningMinute) {
-    return;
-  }
-  state.lastLearningMinute = minutes;
-  learningTime.textContent = `${minutes}分`;
-}
+function computeBoundingBox(meshes) {
+  const box = new THREE.Box3();
+  let hasMesh = false;
 
-function updateQuizScore() {
-  if (state.quiz.total === 0) {
-    quizScore.textContent = "-";
-    return;
-  }
+  meshes.forEach((mesh) => {
+    if (!mesh.visible || !mesh.geometry) {
+      return;
+    }
 
-  const ratio = Math.round((state.quiz.correct / state.quiz.total) * 100);
-  quizScore.textContent = `${ratio}% (${state.quiz.correct}/${state.quiz.total})`;
-}
+    mesh.updateWorldMatrix(true, false);
+    if (!mesh.geometry.boundingBox) {
+      mesh.geometry.computeBoundingBox();
+    }
+    if (!mesh.geometry.boundingBox) {
+      return;
+    }
 
-function startQuiz() {
-  const visibleParts = state.anatomyParts
-    .filter((mesh) => mesh.visible)
-    .map((mesh) => mesh.userData.part);
-
-  if (visibleParts.length < 2) {
-    quizPrompt.textContent = "クイズ出題には、表示中の部位が2つ以上必要です。";
-    quizOptions.innerHTML = "";
-    quizArea.classList.remove("hidden");
-    return;
-  }
-
-  const answer = visibleParts[Math.floor(Math.random() * visibleParts.length)];
-  const distractors = shuffle(visibleParts.filter((part) => part.id !== answer.id)).slice(0, 3);
-  const options = shuffle([answer, ...distractors]);
-
-  state.quiz.active = true;
-  state.quiz.answerId = answer.id;
-  state.quiz.total += 1;
-
-  quizPrompt.textContent = `「${answer.nameJa}」はどこですか。3Dモデルをタップするか、下の候補から選択してください。`;
-  quizOptions.innerHTML = "";
-
-  options.forEach((part) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "quiz-option";
-    button.textContent = part.nameJa;
-    button.addEventListener("click", () => handleQuizAnswer(part.id));
-    quizOptions.appendChild(button);
+    const meshBox = mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);
+    if (!hasMesh) {
+      box.copy(meshBox);
+      hasMesh = true;
+      return;
+    }
+    box.union(meshBox);
   });
 
-  quizArea.classList.remove("hidden");
-  updateQuizScore();
+  return hasMesh ? box : null;
 }
 
-function handleQuizAnswer(selectedId) {
-  if (!state.quiz.active) {
+function computeMeshVolume(mesh) {
+  if (!mesh.geometry) {
+    return 0;
+  }
+
+  if (!mesh.geometry.boundingBox) {
+    mesh.geometry.computeBoundingBox();
+  }
+
+  if (!mesh.geometry.boundingBox) {
+    return 0;
+  }
+
+  const size = mesh.geometry.boundingBox.getSize(new THREE.Vector3());
+  return Math.max(size.x * size.y * size.z, 0);
+}
+
+function buildOriginalDisplayName(cleanLabel, side) {
+  if (!side) {
+    return cleanLabel;
+  }
+
+  const sideLabel = side === "右" ? "Right" : "Left";
+  return `${sideLabel} ${cleanLabel}`;
+}
+
+function getMeshPriority(removedSegments = []) {
+  const tails = new Set(removedSegments.map((segment) => segment.toLowerCase()));
+  let priority = 0;
+
+  if (tails.has("t")) {
+    priority += 40;
+  }
+  if (tails.has("g")) {
+    priority += 30;
+  }
+  if (tails.has("s") || tails.has("o") || tails.has("i") || tails.has("e")) {
+    priority += 20;
+  }
+  if (tails.has("j")) {
+    priority -= 30;
+  }
+  if (removedSegments.some((segment) => /^\d+$/.test(segment))) {
+    priority -= 5;
+  }
+
+  return priority;
+}
+
+function fitCameraToMeshes(meshes) {
+  const box = computeBoundingBox(meshes);
+  if (!box) {
     return;
   }
 
-  if (selectedId === state.quiz.answerId) {
-    state.quiz.correct += 1;
-    quizPrompt.textContent = "正解です。続けて次の問題を開始できます。";
-  } else {
-    const answerPart = state.anatomyParts
-      .map((mesh) => mesh.userData.part)
-      .find((part) => part.id === state.quiz.answerId);
-    const answerLabel = answerPart ? answerPart.nameJa : "正解の部位";
-    quizPrompt.textContent = `不正解です。正解は「${answerLabel}」でした。`;
-  }
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const distance = (maxDim / 2) / Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)) * 1.55;
 
-  state.quiz.active = false;
-  updateQuizScore();
+  state.defaultTarget.copy(center);
+  state.defaultCameraPosition.copy(center).add(new THREE.Vector3(distance * 0.52, size.y * 0.14, distance));
+
+  camera.near = Math.max(0.001, maxDim / 240);
+  camera.far = distance * 10;
+  camera.position.copy(state.defaultCameraPosition);
+  camera.updateProjectionMatrix();
+
+  controls.minDistance = Math.max(0.03, distance * 0.08);
+  controls.maxDistance = distance * 4.1;
+  controls.target.copy(state.defaultTarget);
+  controls.update();
 }
 
-function setEnglishLabels(enabled) {
-  state.showEnglish = enabled;
-  toggleEn.textContent = enabled ? "英語名 ON" : "英語名 OFF";
-
-  if (state.selectedMesh) {
-    renderPartInfo(state.selectedMesh.userData.part);
-    updateFloatingLabel();
+function normalizeModel(group, meshes, targetHeight) {
+  group.updateMatrixWorld(true);
+  const initialBox = computeBoundingBox(meshes);
+  if (!initialBox) {
+    return;
   }
+
+  const initialSize = initialBox.getSize(new THREE.Vector3());
+  const scale = targetHeight / Math.max(initialSize.y, 0.001);
+  group.scale.setScalar(scale);
+  group.updateMatrixWorld(true);
+
+  const scaledBox = computeBoundingBox(meshes);
+  if (!scaledBox) {
+    return;
+  }
+
+  const center = scaledBox.getCenter(new THREE.Vector3());
+  group.position.x -= center.x;
+  group.position.z -= center.z;
+  group.position.y -= scaledBox.min.y;
+  group.updateMatrixWorld(true);
+
+  fitCameraToMeshes(meshes);
+}
+
+function disposeObject(object) {
+  object.traverse((child) => {
+    if (!child.isMesh) {
+      return;
+    }
+    child.geometry?.dispose?.();
+    forEachMaterial(child, (material) => material.dispose?.());
+  });
+}
+
+function disposeCurrentModel() {
+  if (!state.currentModel) {
+    return;
+  }
+
+  clearSelection({ resetInfo: false });
+  disposeObject(state.currentModel);
+  modelRoot.remove(state.currentModel);
+  state.currentModel = null;
+  state.interactiveMeshes = [];
+  structureCount.textContent = "-";
+}
+
+function registerMeshes(group, system) {
+  const visibleMeshMap = new Map();
+  const labels = new Set();
+
+  group.traverse((child) => {
+    if (!child.isMesh) {
+      return;
+    }
+
+    const { cleanLabel, removedSegments, side } = parseObjectLabel(child.name);
+    if (!cleanLabel || cleanLabel === "RootNode") {
+      child.visible = false;
+      return;
+    }
+
+    const includeMesh = shouldIncludeLabel(system, cleanLabel);
+    child.visible = includeMesh;
+    if (!includeMesh) {
+      return;
+    }
+
+    child.userData.displayName = buildOriginalDisplayName(cleanLabel, side);
+    child.userData.japaneseName = translateAnatomyLabel(child.name);
+    child.userData.removedSegments = removedSegments;
+
+    const dedupeKey = `${child.userData.sourceId ?? "unknown"}:${side}:${cleanLabel}`;
+    const volume = computeMeshVolume(child);
+    const priority = getMeshPriority(removedSegments);
+    const currentEntry = visibleMeshMap.get(dedupeKey);
+
+    if (
+      currentEntry &&
+      (currentEntry.priority > priority ||
+        (currentEntry.priority === priority && currentEntry.volume >= volume))
+    ) {
+      child.visible = false;
+      return;
+    }
+
+    if (currentEntry) {
+      currentEntry.mesh.visible = false;
+    }
+
+    visibleMeshMap.set(dedupeKey, { mesh: child, volume, priority });
+  });
+
+  const visibleMeshes = Array.from(visibleMeshMap.values(), (entry) => entry.mesh);
+  visibleMeshes.forEach((child) => {
+    labels.add(child.userData.japaneseName);
+    forEachMaterial(child, (material) => {
+      if ("side" in material) {
+        material.side = THREE.DoubleSide;
+      }
+      if ("transparent" in material) {
+        material.transparent = material.opacity < 1;
+      }
+    });
+  });
+
+  state.interactiveMeshes = visibleMeshes;
+  structureCount.textContent = `${labels.size}`;
+}
+
+function resetView() {
+  camera.position.copy(state.defaultCameraPosition);
+  controls.target.copy(state.defaultTarget);
+  controls.update();
+  updateFloatingLabel();
 }
 
 function resize() {
@@ -378,10 +521,7 @@ function resetTapCandidateIfNeeded(pointerId) {
 }
 
 function onPointerDown(event) {
-  state.activePointers.set(event.pointerId, {
-    x: event.clientX,
-    y: event.clientY,
-  });
+  state.activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
 
   if (state.activePointers.size === 1) {
     state.tapCandidate = {
@@ -402,18 +542,18 @@ function onPointerDown(event) {
 
 function onPointerMove(event) {
   if (state.activePointers.has(event.pointerId)) {
-    state.activePointers.set(event.pointerId, {
-      x: event.clientX,
-      y: event.clientY,
-    });
+    state.activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
   }
 
   if (!state.tapCandidate || state.tapCandidate.pointerId !== event.pointerId) {
     return;
   }
 
-  const distance = Math.hypot(event.clientX - state.tapCandidate.x, event.clientY - state.tapCandidate.y);
-  if (distance > 10) {
+  const movedDistance = Math.hypot(
+    event.clientX - state.tapCandidate.x,
+    event.clientY - state.tapCandidate.y
+  );
+  if (movedDistance > 10) {
     state.tapCandidate.moved = true;
   }
 }
@@ -436,10 +576,99 @@ function onPointerCancel(event) {
   resetTapCandidateIfNeeded(event.pointerId);
 }
 
-domainFilter.addEventListener("change", applyFilters);
-layerFilter.addEventListener("change", applyFilters);
-toggleEn.addEventListener("click", () => setEnglishLabels(!state.showEnglish));
-quizButton.addEventListener("click", startQuiz);
+function populateSystemOptions() {
+  systemSelect.innerHTML = "";
+  SYSTEMS.forEach((system) => {
+    const option = document.createElement("option");
+    option.value = system.id;
+    option.textContent = system.label;
+    systemSelect.appendChild(option);
+  });
+}
+
+function loadFbxAsset(asset, loadVersion, sourceIndex, totalSources) {
+  return new Promise((resolve, reject) => {
+    const loader = new FBXLoader();
+    loader.load(
+      asset.url,
+      (object) => resolve(object),
+      (event) => {
+        if (state.loadVersion !== loadVersion) {
+          return;
+        }
+
+        const loadedMb = (event.loaded / (1024 * 1024)).toFixed(1);
+        if (event.total) {
+          const totalMb = (event.total / (1024 * 1024)).toFixed(1);
+          const progress = Math.round((event.loaded / event.total) * 100);
+          setLoadingMessage(
+            `${sourceIndex}/${totalSources} 読み込み中: ${asset.fileName} ${progress}% (${loadedMb}/${totalMb} MB)`
+          );
+          return;
+        }
+
+        setLoadingMessage(`${sourceIndex}/${totalSources} 読み込み中: ${asset.fileName} ${loadedMb} MB`);
+      },
+      (error) => reject(error)
+    );
+  });
+}
+
+async function loadSelectedSystem() {
+  const system = getCurrentSystem();
+  const loadVersion = state.loadVersion + 1;
+  state.loadVersion = loadVersion;
+  state.ready = false;
+
+  updateSystemPresentation(system);
+  renderEmptySelection(system.emptyMessage);
+  disposeCurrentModel();
+  setLoadingMessage(`${system.label}モデルを読み込み中...`);
+
+  const compositeGroup = new THREE.Group();
+
+  try {
+    for (let index = 0; index < system.sources.length; index += 1) {
+      const sourceId = system.sources[index];
+      const asset = MODEL_ASSETS[sourceId];
+      const object = await loadFbxAsset(asset, loadVersion, index + 1, system.sources.length);
+
+      if (state.loadVersion !== loadVersion) {
+        disposeObject(object);
+        return;
+      }
+
+      object.traverse((child) => {
+        child.userData.sourceId = sourceId;
+      });
+      compositeGroup.add(object);
+    }
+
+    registerMeshes(compositeGroup, system);
+    normalizeModel(compositeGroup, state.interactiveMeshes, system.targetHeight);
+    modelRoot.add(compositeGroup);
+    state.currentModel = compositeGroup;
+    state.ready = true;
+    hideLoadingMessage();
+    resetView();
+  } catch (error) {
+    disposeObject(compositeGroup);
+    setLoadingMessage(`モデル読み込みエラー: ${error.message}`, true);
+    renderEmptySelection(`${system.label}モデルの読み込みに失敗しました。`);
+  }
+}
+
+populateSystemOptions();
+systemSelect.value = state.currentSystemId;
+updateSystemPresentation(getCurrentSystem());
+setOriginalNameVisibility(false);
+
+systemSelect.addEventListener("change", () => {
+  state.currentSystemId = systemSelect.value;
+  loadSelectedSystem();
+});
+
+toggleEn.addEventListener("click", () => setOriginalNameVisibility(!state.showOriginalName));
 resetViewButton.addEventListener("click", resetView);
 
 renderer.domElement.addEventListener("pointerdown", onPointerDown, { passive: true });
@@ -453,27 +682,12 @@ if (typeof ResizeObserver === "function") {
   viewportResizeObserver.observe(viewport);
 }
 
-renderEmptySelection();
-setEnglishLabels(false);
-updateLearningTime();
-updateQuizScore();
-
-loadParts()
-  .then((parts) => {
-    buildMeshes(parts);
-    applyFilters();
-    resize();
-    hideLoadingMessage();
-  })
-  .catch((error) => {
-    renderEmptySelection("部位データの読み込みに失敗しました。");
-    setLoadingMessage(`データ読み込みエラー: ${error.message}`, true);
-  });
+resize();
+loadSelectedSystem();
 
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
-  updateLearningTime();
   updateFloatingLabel();
   renderer.render(scene, camera);
 }

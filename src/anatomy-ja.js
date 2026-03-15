@@ -777,15 +777,18 @@ function translateCompositeLabel(label) {
 export function parseObjectLabel(rawName = "") {
   const segments = String(rawName).split(".");
   let side = "";
+  const removedSegments = [];
 
   while (segments.length > 1) {
     const tail = segments.at(-1).toLowerCase();
     if (!side && SIDE_MAP.has(tail)) {
       side = SIDE_MAP.get(tail);
+      removedSegments.unshift(tail);
       segments.pop();
       continue;
     }
     if (/^\d+$/.test(tail) || DECORATION_SEGMENTS.has(tail)) {
+      removedSegments.unshift(tail);
       segments.pop();
       continue;
     }
@@ -795,7 +798,7 @@ export function parseObjectLabel(rawName = "") {
   const cleanLabel = stripLeadingTrailingSpace(
     humanizeRawLabel(segments.join("."))
   );
-  return { cleanLabel, side };
+  return { cleanLabel, side, removedSegments };
 }
 
 export function translateAnatomyLabel(rawLabel = "") {
